@@ -9,6 +9,7 @@ from django.contrib import messages
 from smtplib import SMTP
 from dotenv import load_dotenv
 import os
+from email.mime import text
 
 load_dotenv()
 
@@ -123,11 +124,15 @@ def contact(request):
     if request.method == 'POST':
         form = ContactForm(request.POST)
         if form.is_valid():
-            msg = f'''We have received your message {form.cleaned_data["name"]} and would like to thank you for writing to us we will reply by email as soon as possible'''
             server = SMTP('smtp.gmail.com', 587)
             server.starttls()
             server.login(os.getenv('EMAIL'), os.getenv('PASSWORD'))
-            server.sendmail(os.getenv('EMAIL'), form.cleaned_data['email'], f'Obada-Blog\n\n{msg}')
+            msg = text.MIMEText(f'''We have received your message {form.cleaned_data["name"]} and would like to thank you for writing to us we will reply by email as soon as possible''')
+            msg['Subject'] = 'Obada Blog'
+            msg['To'] = form.cleaned_data['email']
+            msg['From'] = os.getenv('EMAIL')
+            server.send_message(msg)
+            server.quit()
             messages.success(request, 'Your email was sent successfully')
             form = ContactForm()
             return redirect('contact')
